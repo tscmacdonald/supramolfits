@@ -9,8 +9,20 @@ import seaborn as sns
 
 
 #Global fit for 2:1 H:G complex data
+
+
 def Global21(data):
+	'''Fitting function for 2:1 Host:Gueset stoichiometry.
+	This function calculates association constants from NMR titration data as a Pandas dataframe with the following columns
+	[Host concentration / Molar] [Guest concentration / Molar] [Peak 1 / ppm] [ Peak 2 / ppm]...
+	...for an arbitry number of peaks. If desired, this can be called from the clipboard using pd.read_clipboard(), eg:
+	params = Global21(pd.read_clipboard())
+	
+	Binding parameters are calculated using a global nonlinear least-squares fit over all provided peaks.
+	'''
     def H21(G0,H0,K1,K2):
+		'''H21 calculate the concentration of free host, [H], given G0 (total gues concentration), H0 (total host concentration), K1 (H + G <=> [HG] association constant), and K2 (H + [HG] <=> [H2G] association constant).
+		'''
         G0,H0,K1,K2 = np.asarray(G0), np.asarray(H0), np.asarray(K1), np.asarray(K2)
         try:
             length = len(G0)
@@ -29,12 +41,14 @@ def Global21(data):
         return min(R[R >= 0])
 
     def nmr21(X,K1,K2,delHG,delH2G):
+		'''nmr21: calculates chemical shift difference delDel for a given peak from the free host chemical shift as a function of X = H0, G0, K1, K2, delHG = chemical shift difference on first association, delH2G = chemical shift difference on second association.'''
         H0, G0 = X
         H = H21(G0,H0,K1,K2)
         delDel = (delHG*K1*G0*H + 2*delH2G*G0*K1*K2*H**2)/(H0*(1+K1*H+K1*K2*H**2))
         return delDel
 
     def nmr21_dataset(X,params,i):
+		'''Given X = H0, G0 and params = lmfit parameters element for multiple peaks, calculates chemical shifts for each peak, for each [G0, H0] pairing'''
         K1 = params['K1_%i' % (i+1)].value
         K2 = params['K2_%i' % (i+1)].value
         delHG = params['delDHG1_%i' % (i+1)].value
